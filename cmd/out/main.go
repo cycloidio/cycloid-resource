@@ -58,28 +58,28 @@ func terracost(org, tfplan, apiURL string) ([]models.Metadata, error) {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("expected path to sources as first argument")
+		fmt.Fprint(os.Stderr, "expected path to sources as first argument")
 		os.Exit(1)
 	}
 	sourceDir := os.Args[1]
 	if err := os.Chdir(sourceDir); err != nil {
-		fmt.Printf("unable to access source dir: %v\n", err)
+		fmt.Fprintf(os.Stderr, "unable to access source dir: %v", err)
 		os.Exit(1)
 	}
 
 	var req models.OutRequest
 	if err := json.NewDecoder(os.Stdin).Decode(&req); err != nil {
-		fmt.Printf("unable to read from stdin: %v\n", err)
+		fmt.Fprintf(os.Stderr, "unable to read from stdin: %v", err)
 		os.Exit(1)
 	}
 
 	if req.Source.Email == "" || req.Source.Password == "" {
-		fmt.Printf("email and password are required")
+		fmt.Fprint(os.Stderr, "email and password are required")
 		os.Exit(1)
 	}
 
 	if req.Source.Org == "" || req.Source.Env == "" || req.Source.Project == "" {
-		fmt.Printf("org, env and project are required")
+		fmt.Fprint(os.Stderr, "org, env and project are required")
 		os.Exit(1)
 	}
 
@@ -96,7 +96,7 @@ func main() {
 	}
 
 	if _, err := exec.Command("cy", loginArgs...).Output(); err != nil {
-		fmt.Printf("unable to login to Cycloid: %v\n", err)
+		fmt.Fprintf(os.Stderr, "unable to login to Cycloid: %v", err)
 		os.Exit(1)
 	}
 
@@ -119,13 +119,13 @@ func main() {
 
 	out, err := exec.Command("cy", validateArgs...).Output()
 	if err != nil {
-		fmt.Printf("unable to validate terraform plan: %v\n", err)
+		fmt.Fprintf(os.Stderr, "unable to validate terraform plan: %v", err)
 		os.Exit(1)
 	}
 
 	var res Result
 	if err := json.Unmarshal(out, &res); err != nil {
-		fmt.Printf("unable to unmarshal from cy output: %v\n", err)
+		fmt.Fprintf(os.Stderr, "unable to unmarshal from cy output: %v", err)
 		os.Exit(1)
 	}
 
@@ -174,7 +174,7 @@ func main() {
 	if req.Params.Terracost {
 		estimations, err := terracost(req.Source.Org, req.Params.TFPlanPath, req.Source.ApiURL)
 		if err != nil {
-			fmt.Printf("unable to run terracost check: %v\n", err)
+			fmt.Fprintf(os.Stderr, "unable to run terracost check: %v", err)
 			os.Exit(1)
 		}
 		metadatas = append(metadatas, estimations...)
@@ -188,7 +188,7 @@ func main() {
 
 	output, err := json.Marshal(resp)
 	if err != nil {
-		fmt.Printf("unable to marshal to output: %v\n", err)
+		fmt.Fprintf(os.Stderr, "unable to marshal to output: %v", err)
 		os.Exit(1)
 	}
 	fmt.Println(string(output))
