@@ -20,6 +20,42 @@ type Check struct {
 	Reasons []string `json:"reasons"`
 }
 
+type Estimation struct {
+	PlannedCost string `json:"planned_cost"`
+	PriorCost   string `json:"prior_cost"`
+}
+
+// terracost will run a terracost
+// estimation
+func terracost(org, tfplan, apiURL string) ([]models.Metadata, error) {
+	terracostArgs := []string{
+		"terracost",
+		"estimate",
+		"--org",
+		org,
+		"--plan-path",
+		tfplan,
+		"--api-url",
+		apiURL,
+		"-o",
+		"json",
+	}
+	out, err := exec.Command("cy", terracostArgs...).Output()
+	if err != nil {
+		return nil, fmt.Errorf("unable to estimate terraform plan costs: %w\n", err)
+	}
+
+	var res Estimation
+	if err := json.Unmarshal(out, &res); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal from cy output: %w\n", err)
+	}
+
+	return []models.Metadata{
+		models.Metadata{Name: "planned_cost", Value: res.PlannedCost},
+		models.Metadata{Name: "prior_cost", Value: res.PriorCost},
+	}, nil
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("expected path to sources as first argument")
@@ -133,6 +169,15 @@ func main() {
 		metadatas = append(metadatas, m)
 	} else {
 		version.Advisories = "0"
+	}
+
+	if req.Params.Terracost {
+		estimations, err := terracost(req.Source.Org, req.Params.TFPlanPath, req.Source.ApiURL)
+		if err != nil {
+			fmt.Printf("unable to run terracost check: %v\n", err)
+			os.Exit(1)
+		}
+		metadatas = append(metadatas, estimations...)
 	}
 
 	version.BuildID = os.Getenv("BUILD_ID")
