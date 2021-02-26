@@ -5,5 +5,20 @@ WORKDIR /go/src/github.com/cycloidio/infrapolicy-resource
 COPY . ./
 RUN make
 
-FROM cycloid/cycloid-toolkit:develop
+FROM alpine:3.12
 COPY --from=builder /go/src/github.com/cycloidio/infrapolicy-resource/resource/ /opt/resource
+
+RUN set -e; \
+	apk add --no-cache --virtual .build-deps \
+		curl \
+	; \
+	curl https://raw.githubusercontent.com/cycloidio/cycloid-cli/develop/scripts/cy-wrapper.sh > /usr/bin/cy \
+	&& chmod +x /usr/bin/cy; \
+    apk del .build-deps;
+
+# runtime dependencies
+RUN apk add \
+	bash \
+	jq \
+	curl \
+	wget
