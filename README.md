@@ -23,8 +23,7 @@ resources:
   - name: check
     type: infrapolicy
     source:
-      email: <user-email>
-      password: <user-password>
+      api_key: <api-key>
       env: ((env))
       org: ((org))
       project: ((project))
@@ -46,9 +45,7 @@ Finally, add the `put` step right after the terraform plan and don't forget to t
 
 ### Source configuration
 
-`email`: _required_. The user email address used to authenticate the resource against Cycloid APIs (this should be soon replaced in favor of API keys)
-
-`password`: _required_. The user password used to authenticate the resource against Cycloid APIs (this should be soon replaced in favor of API keys)
+`api_key`: _required_. The Cycloid API key used to authenticate the resource against Cycloid APIs
 
 `project`: _required_. The name of the Cycloid project
 

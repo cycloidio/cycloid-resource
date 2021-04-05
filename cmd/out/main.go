@@ -73,8 +73,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if req.Source.Email == "" || req.Source.Password == "" {
-		fmt.Fprint(os.Stderr, "email and password are required")
+	if req.Source.ApiKey == "" {
+		fmt.Fprint(os.Stderr, "api_key is required")
 		os.Exit(1)
 	}
 
@@ -87,10 +87,8 @@ func main() {
 		"login",
 		"--org",
 		req.Source.Org,
-		"--email",
-		req.Source.Email,
-		"--password",
-		req.Source.Password,
+		"--api-key",
+		req.Source.ApiKey,
 		"--api-url",
 		req.Source.ApiURL,
 	}
