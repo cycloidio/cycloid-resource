@@ -12,7 +12,7 @@ RUN set -e; \
 	apk add --no-cache --virtual .build-deps \
 		curl \
 	; \
-	curl https://raw.githubusercontent.com/cycloidio/cycloid-cli/develop/scripts/cy-wrapper.sh > /usr/bin/cy \
+	curl https://raw.githubusercontent.com/cycloidio/cycloid-cli/master/scripts/cy-wrapper.sh > /usr/bin/cy \
 	&& chmod +x /usr/bin/cy; \
     apk del .build-deps;
 
