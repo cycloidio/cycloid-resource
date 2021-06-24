@@ -45,6 +45,9 @@ func terracost(org, tfplan, apiURL string) ([]models.Metadata, error) {
 		return nil, fmt.Errorf("unable to estimate terraform plan costs: %w\n", err)
 	}
 
+	// Output the terracost estimate JSON that will be used by the cycloid console
+	fmt.Fprintln(os.Stderr, string(out))
+
 	var res Estimation
 	if err := json.Unmarshal(out, &res); err != nil {
 		return nil, fmt.Errorf("unable to unmarshal from cy output: %w\n", err)
