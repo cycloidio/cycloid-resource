@@ -31,11 +31,10 @@ You first need to define a `source` JSON:
 ```json
 {
         "source": {
-                "email": "your-email",
-                "password": "your-password",
                 "env": "your-env",
                 "project": "your-project",
                 "org": "your-org",
+                "api_key": "secret",
                 "api_url": "https://api.staging.cycloid.io"
         },
         "params": {
