@@ -27,23 +27,26 @@ func main() {
 	}
 
 	feature, _ := req.Source.GetFeature()
-	if feature == models.InfraPolicy {
-		InfraPolicyVersion, ok := req.Version.(models.InfraPolicyVersion)
-		if ! ok {
-			fmt.Fprintf(os.Stderr, "Unable to decode the version passed as argument")
+	if feature == models.InfraPolicy && req.Version != nil {
+		var infraPolicyVersion models.InfraPolicyVersion
+		// Now that we know the feature used, we can put back the version from stdin buffer
+		// into json to decode it with the appropriated structure
+		b, _ := json.Marshal(req.Version)
+		if err := json.Unmarshal(b, &infraPolicyVersion); err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to decode the version passed as argument: %v", err)
 			os.Exit(1)
 		}
-		criticals, err := strconv.Atoi(InfraPolicyVersion.Criticals)
+
+		criticals, err := strconv.Atoi(infraPolicyVersion.Criticals)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to get number of criticals check: %v", err)
 			os.Exit(1)
 		}
-		warnings, err := strconv.Atoi(InfraPolicyVersion.Warnings)
+		warnings, err := strconv.Atoi(infraPolicyVersion.Warnings)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to get number of warnings check: %v", err)
 			os.Exit(1)
 		}
-
 		if criticals > 0 || warnings > 0 {
 			fmt.Fprint(os.Stderr, "critical or warning checks are present, check metadata of your resource for more information")
 			os.Exit(1)
