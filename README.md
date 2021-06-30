@@ -9,10 +9,10 @@ First, declare your new resource type:
 
 ```yaml
 resource_types:
-  - name: infrapolicy
+  - name: cycloid-resource
     type: docker-image
     source:
-      repository: cycloid/infrapolicy-resource
+      repository: cycloid/cycloid-resource
       tag: latest
 ```
 
@@ -20,9 +20,22 @@ Then configure your resource:
 
 ```yaml
 resources:
-  - name: check
-    type: infrapolicy
+
+# Infrapolicy resource
+  - name: infrapolicy
+    type: cycloid-resource
     source:
+      feature: infrapolicy
+      api_key: <api-key>
+      env: ((env))
+      org: ((org))
+      project: ((project))
+
+# Terracost resource
+  - name: terracost
+    type: cycloid-resource
+    source:
+      feature: terracost
       api_key: <api-key>
       env: ((env))
       org: ((org))
@@ -44,6 +57,8 @@ Finally, add the `put` step right after the terraform plan and don't forget to t
 ## Parameters 
 
 ### Source configuration
+
+`feature`: _required_. The name of Cycloid feature to use, `terracost` or `infrapolicy`
 
 `api_key`: _required_. The Cycloid API key used to authenticate the resource against Cycloid APIs
 

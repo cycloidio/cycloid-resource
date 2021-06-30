@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strconv"
 
-	"github.com/cycloidio/infrapolicy-resource/models"
+	"github.com/cycloidio/cycloid-resource/models"
 )
 
 type Result struct {
@@ -25,9 +25,8 @@ type Estimation struct {
 	PriorCost   string `json:"prior_cost"`
 }
 
-// terracost will run a terracost
-// estimation
-func terracost(org, tfplan, apiURL string) ([]models.Metadata, error) {
+// terracost will run a terracost estimation
+func terracost(org, tfplan, apiURL string) (models.GenericVersion, []models.Metadata, error) {
 	terracostArgs := []string{
 		"terracost",
 		"estimate",
@@ -42,93 +41,58 @@ func terracost(org, tfplan, apiURL string) ([]models.Metadata, error) {
 	}
 	out, err := exec.Command("cy", terracostArgs...).Output()
 	if err != nil {
-		return nil, fmt.Errorf("unable to estimate terraform plan costs: %w\n", err)
+		return nil, nil, fmt.Errorf("unable to estimate terraform plan costs: %w\n", err)
 	}
+
+	// Output the terracost estimate JSON that will be used by the cycloid console
+	fmt.Fprintln(os.Stderr, string(out))
 
 	var res Estimation
 	if err := json.Unmarshal(out, &res); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal from cy output: %w\n", err)
+		return nil, nil, fmt.Errorf("unable to unmarshal from cy output: %w\n", err)
 	}
 
-	return []models.Metadata{
+	var version models.TerraCostVersion
+	version.BuildID = os.Getenv("BUILD_ID")
+
+	metadatas := []models.Metadata{
 		models.Metadata{Name: "planned_cost", Value: res.PlannedCost},
 		models.Metadata{Name: "prior_cost", Value: res.PriorCost},
-	}, nil
+	}
+
+	return version, metadatas, nil
 }
 
-func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprint(os.Stderr, "expected path to sources as first argument")
-		os.Exit(1)
-	}
-	sourceDir := os.Args[1]
-	if err := os.Chdir(sourceDir); err != nil {
-		fmt.Fprintf(os.Stderr, "unable to access source dir: %v", err)
-		os.Exit(1)
-	}
-
-	var req models.OutRequest
-	if err := json.NewDecoder(os.Stdin).Decode(&req); err != nil {
-		fmt.Fprintf(os.Stderr, "unable to read from stdin: %v", err)
-		os.Exit(1)
-	}
-
-	if req.Source.ApiKey == "" {
-		fmt.Fprint(os.Stderr, "api_key is required")
-		os.Exit(1)
-	}
-
-	if req.Source.Org == "" || req.Source.Env == "" || req.Source.Project == "" {
-		fmt.Fprint(os.Stderr, "org, env and project are required")
-		os.Exit(1)
-	}
-
-	loginArgs := []string{
-		"login",
-		"--org",
-		req.Source.Org,
-		"--api-key",
-		req.Source.ApiKey,
-		"--api-url",
-		req.Source.ApiURL,
-	}
-
-	if _, err := exec.Command("cy", loginArgs...).Output(); err != nil {
-		fmt.Fprintf(os.Stderr, "unable to login to Cycloid: %v", err)
-		os.Exit(1)
-	}
-
-	validateArgs := []string{
+// terracost will run an infrapolicy check
+func infrapolicy(org, project, env, tfplan, apiURL string) (models.GenericVersion, []models.Metadata, error) {
+	cmdArgs := []string{
 		"infrapolicy",
 		"validate",
 		"--org",
-		req.Source.Org,
+		org,
 		"--api-url",
-		req.Source.ApiURL,
+		apiURL,
 		"--env",
-		req.Source.Env,
+		env,
 		"--project",
-		req.Source.Project,
+		project,
 		"--plan-path",
-		req.Params.TFPlanPath,
+		tfplan,
 		"-o",
 		"json",
 	}
-
-	out, err := exec.Command("cy", validateArgs...).Output()
+	out, err := exec.Command("cy", cmdArgs...).Output()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to validate terraform plan: %v", err)
-		os.Exit(1)
+		return nil, nil, fmt.Errorf("unable to estimate infrapolicy plan costs: %w\n", err)
 	}
 
 	var res Result
 	if err := json.Unmarshal(out, &res); err != nil {
-		fmt.Fprintf(os.Stderr, "unable to unmarshal from cy output: %v", err)
-		os.Exit(1)
+		return nil, nil, fmt.Errorf("unable to unmarshal from cy output: %w\n", err)
 	}
 
 	var (
-		version   models.Version
+		version   models.InfraPolicyVersion
 		metadatas []models.Metadata
 	)
 
@@ -169,17 +133,76 @@ func main() {
 		version.Advisories = "0"
 	}
 
-	if req.Params.Terracost {
-		estimations, err := terracost(req.Source.Org, req.Params.TFPlanPath, req.Source.ApiURL)
+	version.BuildID = os.Getenv("BUILD_ID")
+
+	return version, metadatas, nil
+
+}
+
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Fprint(os.Stderr, "expected path to sources as first argument")
+		os.Exit(1)
+	}
+	sourceDir := os.Args[1]
+	if err := os.Chdir(sourceDir); err != nil {
+		fmt.Fprintf(os.Stderr, "unable to access source dir: %v", err)
+		os.Exit(1)
+	}
+
+	var req models.OutRequest
+	if err := json.NewDecoder(os.Stdin).Decode(&req); err != nil {
+		fmt.Fprintf(os.Stderr, "unable to read from stdin: %v", err)
+		os.Exit(1)
+	}
+
+	if err := req.Source.Validate(); err != nil {
+		fmt.Fprintf(os.Stderr, "Resource configuration error: %v", err)
+		os.Exit(1)
+	}
+
+	loginArgs := []string{
+		"login",
+		"--org",
+		req.Source.Org,
+		"--api-key",
+		req.Source.ApiKey,
+		"--api-url",
+		req.Source.ApiURL,
+	}
+
+	if _, err := exec.Command("cy", loginArgs...).Output(); err != nil {
+		fmt.Fprintf(os.Stderr, "unable to login to Cycloid: %v", err)
+		os.Exit(1)
+	}
+
+	var (
+		version   models.GenericVersion
+		metadatas []models.Metadata
+		err       error
+	)
+
+	switch feature, _ := req.Source.GetFeature(); feature {
+	case models.TerraCost:
+		version, metadatas, err = terracost(req.Source.Org, req.Params.TFPlanPath, req.Source.ApiURL)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to run terracost check: %v", err)
 			os.Exit(1)
 		}
-		metadatas = append(metadatas, estimations...)
+
+	case models.InfraPolicy:
+		version, metadatas, err = infrapolicy(req.Source.Org, req.Source.Project, req.Source.Env, req.Params.TFPlanPath, req.Source.ApiURL)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "unable to run infrapolicy: %v", err)
+			os.Exit(1)
+		}
+
+	default:
+		fmt.Fprintf(os.Stderr, "Unknow configured feature named : %s", feature)
+		os.Exit(2)
 	}
 
-	version.BuildID = os.Getenv("BUILD_ID")
-	resp := models.OutResponse{
+	resp := &models.OutResponse{
 		Version:   version,
 		Metadatas: metadatas,
 	}

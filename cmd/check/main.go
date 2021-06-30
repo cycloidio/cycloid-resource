@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cycloidio/infrapolicy-resource/models"
+	"github.com/cycloidio/cycloid-resource/models"
 )
 
 func main() {
@@ -15,7 +15,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	out := []models.Version{
+	if err := req.Source.Validate(); err != nil {
+		fmt.Fprintf(os.Stderr, "Resource configuration error: %v", err)
+		os.Exit(1)
+	}
+
+	out := []models.GenericVersion{
 		req.Version,
 	}
 
@@ -25,5 +30,4 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Println(string(output))
-
 }
