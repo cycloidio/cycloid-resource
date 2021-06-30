@@ -6,8 +6,8 @@ type OutRequest struct {
 }
 
 type OutResponse struct {
-	Version   Version    `json:"version"`
-	Metadatas []Metadata `json:"metadata"`
+	Version   GenericVersion `json:"version"`
+	Metadatas []Metadata     `json:"metadata"`
 }
 
 type Metadata struct {

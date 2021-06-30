@@ -11,7 +11,7 @@ A concourse resource is composed by three components:
 
 This three programs must be executable, you can use bash, python or binary the important thing is to be able to understand the input params and to output the correct information. This [doc](https://concourse-ci.org/implementing-resource-types.html) will help you to understand the params expected for each component.
 
-`infrapolicy-resource` will mainly run the `out` program, since it's a `put` in the pipeline definition, the worfklow is the following:
+`cycloid-resource` will mainly run the `out` program, since it's a `put` in the pipeline definition, the worfklow is the following:
 
 1. put:
 2. put will call the `./out` program
@@ -31,6 +31,7 @@ You first need to define a `source` JSON:
 ```json
 {
         "source": {
+                "feature": "terracost",
                 "env": "your-env",
                 "project": "your-project",
                 "org": "your-org",
