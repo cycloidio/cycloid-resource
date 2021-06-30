@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/cycloidio/infrapolicy-resource/models"
+	"github.com/cycloidio/cycloid-resource/models"
 )
 
 func main() {
@@ -21,20 +21,33 @@ func main() {
 		os.Exit(1)
 	}
 
-	criticals, err := strconv.Atoi(req.Version.Criticals)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to get number of criticals check: %v", err)
-		os.Exit(1)
-	}
-	warnings, err := strconv.Atoi(req.Version.Warnings)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to get number of warnings check: %v", err)
+	if err := req.Source.Validate(); err != nil {
+		fmt.Fprintf(os.Stderr, "Resource configuration error: %v", err)
 		os.Exit(1)
 	}
 
-	if criticals > 0 || warnings > 0 {
-		fmt.Fprint(os.Stderr, "critical or warning checks are present, check metadata of your resource for more information")
-		os.Exit(1)
+	feature, _ := req.Source.GetFeature()
+	if feature == models.InfraPolicy {
+		InfraPolicyVersion, ok := req.Version.(models.InfraPolicyVersion)
+		if ! ok {
+			fmt.Fprintf(os.Stderr, "Unable to decode the version passed as argument")
+			os.Exit(1)
+		}
+		criticals, err := strconv.Atoi(InfraPolicyVersion.Criticals)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "unable to get number of criticals check: %v", err)
+			os.Exit(1)
+		}
+		warnings, err := strconv.Atoi(InfraPolicyVersion.Warnings)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "unable to get number of warnings check: %v", err)
+			os.Exit(1)
+		}
+
+		if criticals > 0 || warnings > 0 {
+			fmt.Fprint(os.Stderr, "critical or warning checks are present, check metadata of your resource for more information")
+			os.Exit(1)
+		}
 	}
 
 	resp := models.OutResponse{

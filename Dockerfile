@@ -1,12 +1,12 @@
 FROM golang:1.15.5-alpine3.12 as builder
 
 RUN apk add make
-WORKDIR /go/src/github.com/cycloidio/infrapolicy-resource
+WORKDIR /go/src/github.com/cycloidio/cycloid-resource
 COPY . ./
 RUN make
 
 FROM alpine:3.12
-COPY --from=builder /go/src/github.com/cycloidio/infrapolicy-resource/resource/ /opt/resource
+COPY --from=builder /go/src/github.com/cycloidio/cycloid-resource/resource/ /opt/resource
 
 RUN set -e; \
 	apk add --no-cache --virtual .build-deps \
