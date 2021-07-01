@@ -39,9 +39,16 @@ func terracost(org, tfplan, apiURL string) (models.GenericVersion, []models.Meta
 		"-o",
 		"json",
 	}
+
 	out, err := exec.Command("cy", terracostArgs...).Output()
+
 	if err != nil {
-		return nil, nil, fmt.Errorf("unable to estimate terraform costs: %v, %w\n", out, err)
+		errS := err.Error()
+		// Get CLI stderr in case of error
+		if ee, ok := err.(*exec.ExitError); ok {
+			errS = string(ee.Stderr)
+		}
+		return nil, nil, fmt.Errorf("unable to estimate terraform costs: %v, %s\n", out, errS)
 	}
 
 	// Output the terracost estimate JSON that will be used by the cycloid console
@@ -83,7 +90,12 @@ func infrapolicy(org, project, env, tfplan, apiURL string) (models.GenericVersio
 	}
 	out, err := exec.Command("cy", cmdArgs...).Output()
 	if err != nil {
-		return nil, nil, fmt.Errorf("unable to estimate infrapolicy plan: %v, %w\n", out, err)
+		errS := err.Error()
+		// Get CLI stderr in case of error
+		if ee, ok := err.(*exec.ExitError); ok {
+			errS = string(ee.Stderr)
+		}
+		return nil, nil, fmt.Errorf("unable to estimate infrapolicy plan: %v, %s\n", out, errS)
 	}
 
 	var res Result
@@ -172,7 +184,12 @@ func main() {
 	}
 
 	if out, err := exec.Command("cy", loginArgs...).Output(); err != nil {
-		fmt.Fprintf(os.Stderr, "unable to login to Cycloid: %v, %w\n", out, err)
+		errS := err.Error()
+		// Get CLI stderr in case of error
+		if ee, ok := err.(*exec.ExitError); ok {
+			errS = string(ee.Stderr)
+		}
+		fmt.Fprintf(os.Stderr, "unable to login to Cycloid: %v, %s\n", out, errS)
 		os.Exit(1)
 	}
 
