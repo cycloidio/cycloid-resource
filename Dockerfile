@@ -8,13 +8,18 @@ RUN make
 FROM alpine:3.12
 COPY --from=builder /go/src/github.com/cycloidio/cycloid-resource/resource/ /opt/resource
 
+COPY cy /usr/bin/cy
 RUN set -e; \
-	apk add --no-cache --virtual .build-deps \
-		curl \
-	; \
-	curl https://raw.githubusercontent.com/cycloidio/cycloid-cli/master/scripts/cy-wrapper.sh > /usr/bin/cy \
-	&& chmod +x /usr/bin/cy; \
-    apk del .build-deps;
+	chmod +x /usr/bin/cy; \
+	sed -i '2 a set -x' /usr/bin/cy;
+#RUN set -e; \
+#	apk add --no-cache --virtual .build-deps \
+#		curl \
+#	; \
+#	curl https://raw.githubusercontent.com/cycloidio/cycloid-cli/master/scripts/cy-wrapper.sh > /usr/bin/cy \
+#	&& chmod +x /usr/bin/cy; \
+#	sed -i '2 a set -x' /usr/bin/cy; \
+#    apk del .build-deps;
 
 # runtime dependencies
 RUN apk add \
