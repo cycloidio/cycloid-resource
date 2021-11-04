@@ -32,7 +32,7 @@ func (s Source) GetFeature() (string, error) {
 	return f, nil
 }
 
-func (s Source) Validate() error {
+func (s *Source) Validate() error {
 	var err error
 
 	_, ferr := s.GetFeature()
@@ -44,6 +44,11 @@ func (s Source) Validate() error {
 	}
 	if s.Org == "" || s.Env == "" || s.Project == "" {
 		err = fmt.Errorf("org, env and project are required")
+	}
+
+    // Setting as default our SaaS API as default url
+	if s.ApiURL == "" {
+		s.ApiURL = "https://http-api.cycloid.io"
 	}
 
 	return err
