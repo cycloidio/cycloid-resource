@@ -51,10 +51,10 @@ Finally, add the `put` step right after the terraform plan and don't forget to t
   ...
 - put: infrapolicy
   params:
-    tfplan_path: tfplan/plan.json
+    tfplan_path: tfstate/plan.json
 - put: terracost
   params:
-    tfplan_path: tfplan/plan.json
+    tfplan_path: tfstate/plan.json
 ```
 
 ## Parameters 
