@@ -11,4 +11,6 @@ type InfraPolicyVersion struct {
 
 type TerraCostVersion struct {
 	BuildID string `json:"build_id"`
+	PlannedCost string `json:"planned_cost"`
+	PriorCost string `json:"prior_cost"`
 }

@@ -77,6 +77,54 @@ Finally, add the `put` step right after the terraform plan and don't forget to t
 
 `tfplan_path`: _required_. The path to the JSON terraform plan result (this should be updated since we know the name of the JSON terraform plan)
 
+## Output files
+
+Used with `get`, the resource will populate one output file:
+
+  * `version.json`: Which contain the same json output provided to Concourse for the version
+
+
+## Run the resource as a task
+
+If you need to obtain detailed json file. You can run it as a task to populate the following json files:
+
+  * `output.json`: JSON formatted output used also as stdout
+  * `cy-output.json`: Raw json output from Cycloid CLI
+
+```YAML
+      - config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: cycloid/cycloid-resource
+              tag: latest
+          run:
+            path: /bin/bash
+            args:
+              - '-ec'
+              - |
+                ls
+                cp ${src_tfplan_path} /tmp; echo "${resource_config}" > source.json
+                /opt/resource/out $PWD/terracost-json/ < source.json
+          inputs:
+            - name: tfstate
+          outputs:
+            - name: terracost-json
+        params:
+          src_tfplan_path: tfstate/plan.json
+          resource_config:
+            source:
+              api_key: ((custom_api-key-admin.key))
+              api_url: 'https://http-api.cycloid.io'
+              env: demo
+              feature: terracost
+              org: cycloid
+              project: test
+            params:
+              tfplan_path: /tmp/plan.json
+```
+
 ## Contributing
 
 If you want to contribute or to have more information on the workflow: [CONTRIBUTIING.md](./CONTRIBUTING.md)

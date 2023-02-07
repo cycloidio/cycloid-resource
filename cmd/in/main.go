@@ -5,13 +5,21 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"path"
 
 	"github.com/cycloidio/cycloid-resource/models"
+	"github.com/cycloidio/cycloid-resource/helpers"
 )
 
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Fprint(os.Stderr, "expected output path as first arg")
+		os.Exit(1)
+	}
+
+	outputDir := os.Args[1]
+	if err := os.Chdir(outputDir); err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to access output dir: %v", err)
 		os.Exit(1)
 	}
 
@@ -63,5 +71,13 @@ func main() {
 		fmt.Fprintf(os.Stderr, "unable to marshal to output: %v", err)
 		os.Exit(1)
 	}
+
+	versionFilePath := path.Join(outputDir, "version.json")
+
+	if err := helpers.WriteInFile(versionFilePath, string(output)); err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to write version.json output file: %v", err)
+		os.Exit(1)
+	}
+
 	fmt.Println(string(output))
 }
