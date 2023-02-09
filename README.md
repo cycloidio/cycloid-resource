@@ -92,13 +92,14 @@ If you need to obtain detailed json file. You can run it as a task to populate t
   * `cy-output.json`: Raw json output from Cycloid CLI
 
 ```YAML
-      - config:
+      - task: cost
+        config:
           platform: linux
           image_resource:
             type: registry-image
             source:
               repository: cycloid/cycloid-resource
-              tag: latest
+              tag: dev
           run:
             path: /bin/bash
             args:
@@ -117,10 +118,10 @@ If you need to obtain detailed json file. You can run it as a task to populate t
             source:
               api_key: ((custom_api-key-admin.key))
               api_url: 'https://http-api.cycloid.io'
-              env: demo
+              env: dev
               feature: terracost
-              org: cycloid
-              project: test
+              org: cycloid-demo
+              project: accenture-mi
             params:
               tfplan_path: /tmp/plan.json
 ```
