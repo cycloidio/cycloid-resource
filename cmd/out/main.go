@@ -8,8 +8,8 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/cycloidio/cycloid-resource/models"
 	"github.com/cycloidio/cycloid-resource/helpers"
+	"github.com/cycloidio/cycloid-resource/models"
 )
 
 type Result struct {
@@ -74,7 +74,7 @@ func terracost(org, tfplan, apiURL string) ([]byte, models.GenericVersion, []mod
 	return out, version, metadatas, nil
 }
 
-// terracost will run an infrapolicy check
+// infrapolicy will run an infrapolicy check
 func infrapolicy(org, project, env, tfplan, apiURL string) ([]byte, models.GenericVersion, []models.Metadata, error) {
 	cmdArgs := []string{
 		"infrapolicy",
@@ -155,6 +155,115 @@ func infrapolicy(org, project, env, tfplan, apiURL string) ([]byte, models.Gener
 
 }
 
+// event will send an event
+func event(org, project, env, title, message, severity, eventType, icon string, tags map[string]string, yamlVarsFile, messageFile, apiURL string) ([]byte, models.GenericVersion, []models.Metadata, error) {
+
+	// Check args
+	if title == "" {
+		return nil, nil, nil, fmt.Errorf("Configuration error, 'title' parameter is missing\n")
+	}
+	if message == "" && messageFile == "" {
+		return nil, nil, nil, fmt.Errorf("Configuration error, 'message' or 'message_file' parameter missing\n")
+	}
+	if eventType == "" {
+		eventType = "Custom"
+	}
+
+	if tags == nil {
+		tags = map[string]string{}
+	}
+
+	if messageFile != "" {
+		var mfErr error
+		message, mfErr = helpers.ReadFileToString(messageFile)
+		if mfErr != nil {
+			return nil, nil, nil, fmt.Errorf("unable to message from file: %s, %v\n", messageFile, mfErr)
+		}
+	}
+
+	extraVars := map[string]string{}
+	if yamlVarsFile != "" {
+		var yvfErr error
+		extraVars, yvfErr = helpers.LoadYAMLToMap(yamlVarsFile)
+		if yvfErr != nil {
+			return nil, nil, nil, fmt.Errorf("unable to load the defined variable file: %s, %v\n", yamlVarsFile, yvfErr)
+		}
+	}
+
+	title = helpers.ReplaceVariables(title, extraVars)
+	message = helpers.ReplaceVariables(message, extraVars)
+
+	// Add default env / project tags to the event
+	_, ok := tags["project"]
+	if !ok {
+		tags["project"] = project
+	}
+	_, ok = tags["env"]
+	if !ok {
+		tags["env"] = env
+	}
+
+	tagArgs := []string{}
+	for tName, tValue := range tags {
+		tagArgs = append(tagArgs, []string{"--tag", fmt.Sprintf("%s=%s", tName, tValue)}...)
+	}
+
+	eventArgs := append([]string{
+		"event",
+		"create",
+		"--org",
+		org,
+		"--title",
+		title,
+		"--message",
+		helpers.MakeStringShellSafe(message),
+		"--type",
+		eventType,
+		"--api-url",
+		apiURL,
+		"-o",
+		"json",
+	}, tagArgs...)
+
+	if severity != "" {
+		eventArgs = append(eventArgs, []string{"--severity", severity}...)
+	}
+	if icon != "" {
+		eventArgs = append(eventArgs, []string{"--icon", icon}...)
+	}
+
+	//cy --org $your_org event create --title "A cool title" \
+	//--message "You event message" \
+	//--severity "info" --tag "env=myenv" --tag "multiple_tags=true"
+
+	//cy  --org test event create --tag kpi=time_to_release --title "Release" \
+	//--tag project=test --message '{"env": "dev", "version": "v1"}'
+
+	//# KPI code_coverage
+	//cy  --org test event create --tag kpi=code_coverage --title "Coverage" \
+	//--tag project=test --message '{"coverage": 60.10}'
+
+	out, err := exec.Command("cy", eventArgs...).Output()
+
+	if err != nil {
+		errS := err.Error()
+		// Get CLI stderr in case of error
+		if ee, ok := err.(*exec.ExitError); ok {
+			errS = string(ee.Stderr)
+		}
+		return nil, nil, nil, fmt.Errorf("CLI error: %v, %s", out, errS)
+	}
+
+	var version models.EventVersion
+	version.BuildID = os.Getenv("BUILD_ID")
+
+	metadatas := []models.Metadata{
+		models.Metadata{Name: "title", Value: title},
+	}
+
+	return out, version, metadatas, nil
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Fprint(os.Stderr, "Expected path to sources as first argument")
@@ -206,13 +315,25 @@ func main() {
 	)
 
 	switch feature, _ := req.Source.GetFeature(); feature {
-	case models.TerraCost:
-		cyJSONOutput, version, metadatas, err = terracost(req.Source.Org, req.Params.TFPlanPath, req.Source.ApiURL)
+
+	// Event
+	case models.Event:
+		cyJSONOutput, version, metadatas, err = event(req.Source.Org, req.Source.Project, req.Source.Env, req.Params.Title, req.Params.Message, req.Params.Severity, req.Params.Type, req.Params.Icon, req.Params.Tags, req.Params.YamlVarsFile, req.Params.MessageFile, req.Source.ApiURL)
+
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to run terracost check: %v", err)
+			fmt.Fprintf(os.Stderr, "Unable to send event: %v", err)
 			os.Exit(1)
 		}
 
+	// Terracost
+	case models.TerraCost:
+		cyJSONOutput, version, metadatas, err = terracost(req.Source.Org, req.Params.TFPlanPath, req.Source.ApiURL)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to run terracost: %v", err)
+			os.Exit(1)
+		}
+
+	// InfraPolicy
 	case models.InfraPolicy:
 		cyJSONOutput, version, metadatas, err = infrapolicy(req.Source.Org, req.Source.Project, req.Source.Env, req.Params.TFPlanPath, req.Source.ApiURL)
 		if err != nil {
