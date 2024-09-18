@@ -232,17 +232,6 @@ func event(org, project, env, title, message, severity, eventType, icon string, 
 		eventArgs = append(eventArgs, []string{"--icon", icon}...)
 	}
 
-	//cy --org $your_org event create --title "A cool title" \
-	//--message "You event message" \
-	//--severity "info" --tag "env=myenv" --tag "multiple_tags=true"
-
-	//cy  --org test event create --tag kpi=time_to_release --title "Release" \
-	//--tag project=test --message '{"env": "dev", "version": "v1"}'
-
-	//# KPI code_coverage
-	//cy  --org test event create --tag kpi=code_coverage --title "Coverage" \
-	//--tag project=test --message '{"coverage": 60.10}'
-
 	out, err := exec.Command("cy", eventArgs...).Output()
 
 	if err != nil {
