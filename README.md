@@ -27,9 +27,10 @@ resources:
     source:
       feature: infrapolicy
       api_key: <api-key>
-      env: ((env))
-      org: ((org))
-      project: ((project))
+      api_url: ($ .api_url $)
+      env: ($ .environment $)
+      org: ($ .organization_canonical $)
+      project: ($ .project $)
 
 # Terracost resource
   - name: terracost
@@ -37,9 +38,10 @@ resources:
     source:
       feature: terracost
       api_key: <api-key>
-      env: ((env))
-      org: ((org))
-      project: ((project))
+      api_url: ($ .api_url $)
+      env: ($ .environment $)
+      org: ($ .organization_canonical $)
+      project: ($ .project $)
 
 # Event resource
   - name: event
@@ -47,9 +49,10 @@ resources:
     source:
       feature: event
       api_key: <api-key>
-      env: ((env))
-      org: ((org))
-      project: ((project))
+      api_url: ($ .api_url $)
+      env: ($ .environment $)
+      org: ($ .organization_canonical $)
+      project: ($ .project $)
 ```
 
 
@@ -81,7 +84,7 @@ resources:
 
 `icon`: _optional_. Icon to display. The icons are the ones from Font Awesome. Example: fa-cubes https://fontawesome.com/search?o=r&m=free&f=classic
 
-`vars_file`: _optional_. Load vars from a file that you can use in event message or title. format MYKEY: value usage my title containing vars $MYKEY.
+`yaml_vars_file`: _optional_. Load vars from a file that you can use in event message or title. format MYKEY: value usage my title containing vars $MYKEY.
 
 `tags`: _optional_. The tags allow filtering. Example:
 
