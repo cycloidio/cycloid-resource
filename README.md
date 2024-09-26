@@ -88,6 +88,12 @@ resources:
 
 `tags`: _optional_. The tags allow filtering. Example:
 
+```YAML
+tags:
+  foo: bar
+```
+
+
 
 ### Put parameters for `terracost`, `infrapolicy`
 
