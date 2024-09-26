@@ -7,6 +7,7 @@ import (
 
 const InfraPolicy = "infrapolicy"
 const TerraCost = "terracost"
+const Event = "event"
 
 type Source struct {
 	// Feature is the name of the Cycloid feature eg infrapolicy, terracost
@@ -25,8 +26,8 @@ func (s Source) GetFeature() (string, error) {
 	if f == "" {
 		return "", fmt.Errorf("feature field is empty")
 	}
-	if f != InfraPolicy && f != TerraCost {
-		return "", fmt.Errorf("feature field should match %s", strings.Join([]string{InfraPolicy, TerraCost}, ", "))
+	if f != InfraPolicy && f != TerraCost && f != Event {
+		return "", fmt.Errorf("feature field should match %s", strings.Join([]string{InfraPolicy, TerraCost, Event}, ", "))
 	}
 
 	return f, nil
@@ -42,11 +43,12 @@ func (s *Source) Validate() error {
 	if s.ApiKey == "" {
 		err = fmt.Errorf("api_key is required")
 	}
+
 	if s.Org == "" || s.Env == "" || s.Project == "" {
 		err = fmt.Errorf("org, env and project are required")
 	}
 
-    // Setting as default our SaaS API as default url
+	// Setting as default our SaaS API URL
 	if s.ApiURL == "" {
 		s.ApiURL = "https://http-api.cycloid.io"
 	}

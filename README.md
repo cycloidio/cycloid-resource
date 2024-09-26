@@ -27,9 +27,10 @@ resources:
     source:
       feature: infrapolicy
       api_key: <api-key>
-      env: ((env))
-      org: ((org))
-      project: ((project))
+      api_url: ($ .api_url $)
+      env: ($ .environment $)
+      org: ($ .organization_canonical $)
+      project: ($ .project $)
 
 # Terracost resource
   - name: terracost
@@ -37,31 +38,29 @@ resources:
     source:
       feature: terracost
       api_key: <api-key>
-      env: ((env))
-      org: ((org))
-      project: ((project))
+      api_url: ($ .api_url $)
+      env: ($ .environment $)
+      org: ($ .organization_canonical $)
+      project: ($ .project $)
+
+# Event resource
+  - name: event
+    type: cycloid-resource
+    source:
+      feature: event
+      api_key: <api-key>
+      api_url: ($ .api_url $)
+      env: ($ .environment $)
+      org: ($ .organization_canonical $)
+      project: ($ .project $)
 ```
 
-Finally, add the `put` step right after the terraform plan and don't forget to the `output_planfile: true` in order to generate a terraform plan JSON file:
-
-```yaml
-- put: tfstate
-  get_params:
-    output_planfile: true
-  ...
-- put: infrapolicy
-  params:
-    tfplan_path: tfstate/plan.json
-- put: terracost
-  params:
-    tfplan_path: tfstate/plan.json
-```
 
 ## Parameters 
 
 ### Source configuration
 
-`feature`: _required_. The name of Cycloid feature to use, `terracost` or `infrapolicy`
+`feature`: _required_. The name of Cycloid feature to use, `terracost`, `infrapolicy` or `event`
 
 `api_key`: _required_. The Cycloid API key used to authenticate the resource against Cycloid APIs
 
@@ -73,7 +72,30 @@ Finally, add the `put` step right after the terraform plan and don't forget to t
 
 `api_url`: _optional_. Override the default API URL for infrapolicy validation 
 
-### Put parameters
+### Put parameters for `event`
+
+`title`: _required_. The title of the event.
+
+`message` or `message_file`: _required_. One have to be specified, `message` message in the event body or `message_file` file path which contain the message for event body.
+
+`type`: _optional_. The type of the event. Currently, only Cycloid, Custom, AWS or Monitoring are allowed.
+
+`severity`: _optional_. The severity of the event. Currently, only info, warn, err or crit are allowed.
+
+`icon`: _optional_. Icon to display. The icons are the ones from Font Awesome. Example: fa-cubes https://fontawesome.com/search?o=r&m=free&f=classic
+
+`yaml_vars_file`: _optional_. Load vars from a file that you can use in event message or title. format MYKEY: value usage my title containing vars $MYKEY.
+
+`tags`: _optional_. The tags allow filtering. Example:
+
+```YAML
+tags:
+  foo: bar
+```
+
+
+
+### Put parameters for `terracost`, `infrapolicy`
 
 `tfplan_path`: _required_. The path to the JSON terraform plan result (this should be updated since we know the name of the JSON terraform plan)
 
@@ -84,7 +106,31 @@ Used with `get`, the resource will populate one output file:
   * `version.json`: Which contain the same json output provided to Concourse for the version
 
 
-## Run the resource as a task
+## Usage
+
+Finally, add the `put` step right after the terraform plan and don't forget to the `output_planfile: true` in order to generate a terraform plan JSON file:
+
+```yaml
+# Terracost and infrapolicy
+- put: tfstate
+  get_params:
+    output_planfile: true
+  ...
+- put: infrapolicy
+  params:
+    tfplan_path: tfstate/plan.json
+- put: terracost
+  params:
+    tfplan_path: tfstate/plan.json
+
+# Event
+- put: event
+  params:
+    title: "my event"
+    message: "This is my message"
+```
+
+## Tips - run the resource as a task (Advanced/troubleshooting)
 
 If you need to obtain detailed json file. You can run it as a task to populate the following json files:
 
