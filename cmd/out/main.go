@@ -213,12 +213,6 @@ func event(org, project, env, title, message, severity, eventType, icon string, 
 		tags["environment_canonical"] = env
 	}
 
-	project_canonical: ($ .project $)
-    environment_canonical: ($ .environment $)
-
-
-
-
 	tagArgs := []string{}
 	for tName, tValue := range tags {
 		tagArgs = append(tagArgs, []string{"--tag", fmt.Sprintf("%s=%s", tName, tValue)}...)
