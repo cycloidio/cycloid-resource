@@ -193,7 +193,8 @@ func event(org, project, env, title, message, severity, eventType, icon string, 
 	title = helpers.ReplaceVariables(title, extraVars)
 	message = helpers.ReplaceVariables(message, extraVars)
 
-	// Add default env / project tags to the event
+	// TODO keep only one project/env tags when our API will be updated to use same tags for all features
+	// Add default env / project tags to the event (used usually for metrics)
 	_, ok := tags["project"]
 	if !ok {
 		tags["project"] = project
@@ -202,6 +203,21 @@ func event(org, project, env, title, message, severity, eventType, icon string, 
 	if !ok {
 		tags["env"] = env
 	}
+	// Add default environment_canonical / project_canonical tags to the event usually used for events display filter
+	_, ok := tags["project_canonical"]
+	if !ok {
+		tags["project_canonical"] = project
+	}
+	_, ok = tags["environment_canonical"]
+	if !ok {
+		tags["environment_canonical"] = env
+	}
+
+	project_canonical: ($ .project $)
+    environment_canonical: ($ .environment $)
+
+
+
 
 	tagArgs := []string{}
 	for tName, tValue := range tags {
