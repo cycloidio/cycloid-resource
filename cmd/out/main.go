@@ -204,7 +204,7 @@ func event(org, project, env, title, message, severity, eventType, icon string, 
 		tags["env"] = env
 	}
 	// Add default environment_canonical / project_canonical tags to the event usually used for events display filter
-	_, ok := tags["project_canonical"]
+	_, ok = tags["project_canonical"]
 	if !ok {
 		tags["project_canonical"] = project
 	}
